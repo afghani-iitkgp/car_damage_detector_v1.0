@@ -10,7 +10,7 @@ import time
 # and send_from_directory will help us to send/show on the
 # browser the file that the user just uploaded
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory,flash
-from werkzeug import secure_filename
+from werkzeug.utils import secure_filename
 # Initialize the Flask application
 app = Flask(__name__)
 # This is the path to the upload directory
@@ -41,7 +41,7 @@ def upload():
     if file and allowed_file(file.filename):
         # Make the filename safe, remove unsupported chars
         filename = secure_filename(file.filename)
-        filename  = str(len(os.listdir(app.config['UPLOAD_FOLDER']))+1)+'.jpg'
+        #filename = str(len(os.listdir(app.config['UPLOAD_FOLDER']))+1)+'.jpg'
         # Move the file form the temporal folder to
         # the upload folder we setup
         file_name_full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -56,17 +56,27 @@ def upload():
 # an image, that image is going to be show after the upload
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'],
-                               filename)
+    print("hello0000000w jhaG")
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 @app.route('/claim', methods=['POST'])
 def predict():
-    image_path = max(glob.glob(r'uploads\*.jpg'), key=os.path.getctime)
+    #image_path = max(glob.glob(r'uploads/*.jpg'), key=os.path.getctime)
+    #image_path = "./uploads/1.jpg"
+
+    image_paths_list = []
+    image_path = ''
+    for root, d_names, f_names in os.walk('./uploads'):
+        image_path = os.path.join(root, f_names[0])
+
+
+
     with tf.Graph().as_default():
-        human_string, score= prediction(image_path)
+        human_string, score = prediction(image_path)
     print('model one value' + str(human_string))
     print('model one value' + str(score))
+    print(image_path)
     if (human_string == 'car'):
         label_text = 'This is not a damaged car with confidence ' + str(score) + '%. Please upload a damaged car image'
         print(image_path)
@@ -84,21 +94,22 @@ def predict():
         print(image_path)
         return render_template('front.html', text = label_text, filename= image_path)
 
-def cleanDirectory(threadName,delay):
+def cleanDirectory(threadName, delay):
 
    while True:
        time.sleep(delay)
        print ("Cleaning Up Directory")
-       filelist = [ f for f in (os.listdir(app.config['UPLOAD_FOLDER']))  ]
+       filelist = [f for f in (os.listdir(app.config['UPLOAD_FOLDER']))  ]
        for f in filelist:
-         #os.remove("Uploads/"+f)
-         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
+         os.remove("./uploads/"+f)
+         #os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
 
 
 
 if __name__ == '__main__':
     try:
-       _thread.start_new_thread( cleanDirectory, ("Cleaning Thread", 300, ) )
+        #pass
+       _thread.start_new_thread(cleanDirectory, ("Cleaning Thread", 50, ))
     except:
-       print("Error: unable to start thread" )
+       print("Error: unable to start thread")
     app.run()
